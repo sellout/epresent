@@ -95,6 +95,7 @@
 (defvar epresent-hide-emphasis-markers nil)
 (defvar epresent-outline-ellipsis nil)
 (defvar epresent-pretty-entities nil)
+(defvar epresent-page-number 0)
 
 (defcustom epresent-format-latex-scale 4
   "A scaling factor for the size of the images generated from LaTeX."
@@ -119,7 +120,7 @@
   :group 'epresent)
 (make-variable-frame-local 'epresent-frame-local) ;; Obsolete function?
 
-(defcustom epresent-mode-line nil
+(defcustom epresent-mode-line '(:eval (int-to-string epresent-page-number))
   "Set the mode-line format. Hides it when nil"
   :group 'epresent)
 
@@ -190,6 +191,12 @@ If nil then source blocks are initially hidden on slide change."
     (when (and level (> level epresent-frame-level))
       (org-up-heading-all (- level epresent-frame-level)))))
 
+(defun epresent-jump-to-page (num)
+  "Jump directly to a particular page in the presentation."
+  (interactive "npage number: ")
+  (epresent-top)
+  (dotimes (_ (1- num)) (epresent-next-page)))
+
 (defun epresent-current-page ()
   "Present the current outline heading."
   (interactive)
@@ -213,6 +220,7 @@ If nil then source blocks are initially hidden on slide change."
   (interactive)
   (widen)
   (goto-char (point-min))
+  (setq epresent-page-number 1)
   (epresent-current-page))
 
 (defun epresent-next-page ()
@@ -224,6 +232,7 @@ If nil then source blocks are initially hidden on slide change."
          epresent-frame-level)
       (outline-next-heading)
     (org-get-next-sibling))
+  (incf epresent-page-number)
   (epresent-current-page))
 
 (defun epresent-previous-page ()
@@ -236,6 +245,8 @@ If nil then source blocks are initially hidden on slide change."
          epresent-frame-level)
       (outline-previous-heading)
     (org-get-last-sibling))
+  (when (< 1 epresent-page-number)
+    (decf epresent-page-number))
   (epresent-current-page))
 
 (defun epresent-clean-overlays (&optional start end)
@@ -467,6 +478,7 @@ If nil then source blocks are initially hidden on slide change."
     (define-key map [left] 'epresent-previous-page)
     (define-key map [prior] 'epresent-previous-page)
     (define-key map [backspace] 'epresent-previous-page)
+    (define-key map "v" 'epresent-jump-to-page)
     ;; within page functions
     (define-key map "c" 'epresent-next-src-block)
     (define-key map "C" 'epresent-previous-src-block)
